@@ -1,0 +1,32 @@
+[build-system]
+requires = ["flit_core >=3.2,<4"]
+build-backend = "flit_core.buildapi"
+
+[project]
+name = "Medical_assistant"
+version = "0.0.1"
+description = "Chatbot project (LLM + RAG) designed to explain medical records."
+authors = [
+  { name = "Jeremy Duval" },
+]
+
+readme = "README.md"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    
+]
+requires-python = "~=3.10.0"
+
+
+[tool.ruff]
+line-length = 99
+src = ["Medical_assistant"]
+include = ["pyproject.toml", "Medical_assistant/**/*.py"]
+
+[tool.ruff.lint]
+extend-select = ["I"]  # Add import sorting
+
+[tool.ruff.lint.isort]
+known-first-party = ["Medical_assistant"]
+force-sort-within-sections = true
+
