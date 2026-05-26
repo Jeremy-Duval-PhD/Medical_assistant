@@ -3,4 +3,15 @@ pip
 pytest
 python-dotenv
 ruff
--e .
+pandas
+numpy
+jupyter
+matplotlib
+seaborn
+sentence-transformers
+chromadb
+scikit-learn
+biopython
+tqdm
+pyyaml
+dvc
