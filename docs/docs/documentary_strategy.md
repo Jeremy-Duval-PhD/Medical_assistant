@@ -47,12 +47,16 @@ We will use [DVC](https://dvc.org/).
 
 ## Chunking
 
+We use *NLTK* for sentence tokenization. We will preserve the entire sentence without truncation or overlapping tokens to maintain context.
+
 We will start with the following parameters, which, once again, represent a good compromise.
 
 ```Python
-chunk_size = 400
-chunk_overlap = 50 
+chunk_size=500,
+overlap_sentences=1
 ```
+
+For now, we are working with characters and sentences because it is simple to start a new project this way. Then, we will incrementally upgrade the project.
 
 ## Embedding 
 
