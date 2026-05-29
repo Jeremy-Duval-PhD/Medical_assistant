@@ -60,13 +60,22 @@ For now, we are working with characters and sentences because it is simple to st
 
 ## Embedding 
 
-First, we will use **"all-MiniLM-L6-v2"** for embedding. It is:
+We use the "SentenceTransformer" from "sentence_transformers" because it is:
+- Lightweight
+- quick
+- widely used for RAG
+- excellent rapport qualité/performance
+- adapted for laptops
+
+First, we will use the model **"all-MiniLM-L6-v2"** for embedding. It is:
 - very fast
 - lightweight
 - excellent benchmark retrieval
 - perfect CPU
 - widely used in RAG
 
-## VectorDB
+## VectorDB And Retriever
 
 We will use **Chroma** as our VectorDB. It is simple and efficient to use.
+
+The retrieval process is currently simple. Later, we can improve it using reranking, metadata filtering, or hybrid retrieval.
