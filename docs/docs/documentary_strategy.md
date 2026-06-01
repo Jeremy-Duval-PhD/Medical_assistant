@@ -79,3 +79,72 @@ First, we will use the model **"all-MiniLM-L6-v2"** for embedding. It is:
 We will use **Chroma** as our VectorDB. It is simple and efficient to use.
 
 The retrieval process is currently simple. Later, we can improve it using reranking, metadata filtering, or hybrid retrieval.
+
+# First Run Analysis
+## Retrieval Quality
+
+The retrieval system, which is based on embeddings and ChromaDB, generally returns documents that are consistent with the entered queries.
+
+Tests conducted on several medical queries demonstrate that the retrieved chunks are largely relevant to the search intent.
+
+## Document noise
+
+The observed noise level is low.
+
+However, some edge cases remain:
+
+- very general documents
+- partially relevant chunks
+- occasional retrieval of less specific documents
+
+Future improvements could be made through:
+
+- more advanced query cleaning
+- query rewriting
+- reranking
+
+## Identified Limitations 
+### Document Diversity
+
+Currently, the system does not guarantee that chunks come from different documents.
+
+In some cases, multiple chunks from the same article may dominate the context sent to the LLM.
+
+A strategy to diversify the results may be added at a later date.
+
+### Recency of Knowledge:
+
+The system already utilizes temporal metadata.
+
+A future improvement could involve integrating a hybrid score.
+
+> Semantic relevance + recency of publication
+
+This would prioritize the most recent publications.
+
+## Query preprocessing:
+
+The current preprocessing primarily involves the following:
+
+- normalization
+- stopword removal
+
+This approach remains straightforward.
+
+Future improvements could include:
+
+- lemmatization
+- extraction of medical entities
+- automatic query reformulation using an LLM
+
+## Conclusion:
+
+The retrieval system provides a solid foundation for the initial project version.
+
+The main objectives of the sprint have been achieved:
+
+- cleaned corpus
+- consistent chunking
+- generated embeddings
+- operational ChromaDB vectorization
+- functional semantic search
