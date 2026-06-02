@@ -8,3 +8,11 @@ retrieval:
 chunking:
   chunk_size: 500
   overlap_sentences: 1
+
+llm:
+  provider: ollama
+  model: qwen2.5:1.5b
+
+generation:
+  temperature: 0.1
+  max_tokens: 150
