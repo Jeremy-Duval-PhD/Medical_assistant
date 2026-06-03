@@ -26,3 +26,7 @@ We chose Mistral because it is open source and has good performance, although it
 For now, we will limit the context to the RAG documents. Initially, we prefer an incomplete answer to an invented one.
 
 *Following an evaluation and benchmarking, it appears that "ollama.chat" takes a long time to start in Python. This may be due to a lack of compatibility with Python 3.12. For now, the stream mode seems to be more efficient.*
+
+## Sources
+
+Currently, sources are shown at the end of the answer rather than being linked to the citation. This is a choice made to simplify the work for the first version.

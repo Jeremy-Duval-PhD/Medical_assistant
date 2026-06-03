@@ -78,7 +78,7 @@ First, we will use the model **"all-MiniLM-L6-v2"** for embedding. It is:
 
 We will use **Chroma** as our VectorDB. It is simple and efficient to use.
 
-The retrieval process is currently simple. Later, we can improve it using reranking, metadata filtering, or hybrid retrieval.
+The retrieval process is currently simple. Later, we can improve it using reranking, metadata filtering (year, preprint...), or hybrid retrieval.
 
 # First Run Analysis
 ## Retrieval Quality
