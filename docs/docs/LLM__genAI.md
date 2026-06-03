@@ -30,3 +30,15 @@ For now, we will limit the context to the RAG documents. Initially, we prefer an
 ## Sources
 
 Currently, sources are shown at the end of the answer rather than being linked to the citation. This is a choice made to simplify the work for the first version.
+
+## Evaluation
+
+First, we manually evaluate a set of simple questions. Later, we will automate the process using JSON and more detailed questions.
+
+## First Version
+### Retrieval
+
+Identified limitations:
+- Chunks that are too specialized.
+- Chunks at the wrong level
+- Diversification issues

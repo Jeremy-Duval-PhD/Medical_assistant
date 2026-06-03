@@ -1,0 +1,19 @@
+[
+  {
+    "question": "What is glioblastoma?",
+    "expected_keywords": [
+      "brain tumor",
+      "aggressive",
+      "glioblastoma"
+    ]
+  },
+
+  {
+    "question": "How is glioblastoma prognosis evaluated?",
+    "expected_keywords": [
+      "biomarker",
+      "survival",
+      "MRI"
+    ]
+  }
+]
