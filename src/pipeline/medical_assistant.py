@@ -64,10 +64,10 @@ def ask_medical_assistant(
         print(f"{elapsed:.1f} seconds")
 
     sources = get_sources(results)
-    print(sources)
+    print(f'\n{sources}')
 
     answer = answer + "\n" + sources    
-    
+
     return {
         "results": results,
         "question": question,

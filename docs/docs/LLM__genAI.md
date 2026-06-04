@@ -42,3 +42,28 @@ Identified limitations:
 - Chunks that are too specialized.
 - Chunks at the wrong level
 - Diversification issues
+
+### Answers
+
+Identified limitations:
+- Duplicate documents
+- Overly simplistic retrieval
+- Insufficient model
+
+### Assessment
+
+The following table presents the mean score for each category. The scores are mediocre, but this is normal for a first system with a light model.
+
+| Retrieval  | Relevance | Faithfulness | Clarity |
+|:-----|:-----:|:-----:|:-----:|
+| 2.3 | 3.2 | 4.3 | 3.7 |
+
+With:
+- 1 = bad
+- 5 = excellent
+
+**Definitions:**
+- **Retrieval:** Have the correct documents been found?
+- **Relevance:** Does it answer the question?
+- **Accuracy:** Is it accurate in the context?
+- **Clarity:** Is it understandable?
