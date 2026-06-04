@@ -115,3 +115,56 @@ class MedicalRetriever:
         )
 
         return results
+
+    def retrieve_diverse(
+        self,
+        query,
+        top_k=config['retrieval']['top_k']
+    ):
+
+        query_embedding = self._get_query_embedding(query)
+
+        results = self.collection.query(
+
+            query_embeddings=[
+                query_embedding.tolist()
+            ],
+
+            n_results= max(10, top_k * 3)
+        )
+
+        seen_pmids = set()
+
+        selected_documents = []
+        selected_metadatas = []
+        selected_distances = []
+        selected_ids = []
+
+        for doc, metadata, distance, doc_id in zip(
+            results["documents"][0],
+            results["metadatas"][0],
+            results["distances"][0],
+            results["ids"][0]
+        ):
+
+            pmid = metadata["pmid"]
+
+            if pmid in seen_pmids:
+                continue
+            else:
+                seen_pmids.add(pmid)
+
+                selected_documents.append(doc)
+                selected_metadatas.append(metadata)
+                selected_distances.append(distance)
+                selected_ids.append(doc_id)
+
+            if len(selected_documents) == top_k:
+                break
+
+        return {
+            "ids": [selected_ids],
+            "documents": [selected_documents],
+            "metadatas": [selected_metadatas],
+            "distances": [selected_distances]
+        }

@@ -80,6 +80,10 @@ We will use **Chroma** as our VectorDB. It is simple and efficient to use.
 
 The retrieval process is currently simple. Later, we can improve it using reranking, metadata filtering (year, preprint...), or hybrid retrieval.
 
+After the baseline system test, we chose to improve the Retriever by:
+- PMID diversification.
+- Retrieve the entire article instead of only a chunk (informations are frequently splitted into the entire abstract).
+
 # First Run Analysis
 ## Retrieval Quality
 
