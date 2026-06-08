@@ -1,5 +1,6 @@
 from src.llm.generator import generate_answer
 from src.llm.prompts import build_prompt
+from src.data.article_store import get_articles
 
 def build_context(results):
 
@@ -12,6 +13,31 @@ def build_context(results):
 
         sections.append(
             f"[PMID:{metadata['pmid']}]\n{doc}"
+        )
+
+    return "\n\n".join(sections)
+
+
+def build_article_context(results):
+
+    articles = get_articles()
+
+    metadatas = results["metadatas"][0]
+
+    sections = []
+
+    for metadata in metadatas:
+
+        pmid = metadata["pmid"]
+
+        article = articles.get(pmid)
+
+        if article is None:
+            continue
+
+        sections.append(
+            f"[PMID:{pmid}]\n"
+            f"{article['text']}"
         )
 
     return "\n\n".join(sections)
@@ -39,13 +65,19 @@ def ask_medical_assistant(
     strict=True,
     debug=False
 ):
-
+	"""
     results = retriever.retrieve(
         query=question
     )
     
     context = build_context(results)
-    
+    """
+    results = retriever.retrieve_diverse_articles(
+	    query=question
+	)
+
+	context = build_article_context(results)
+	    
     prompt = build_prompt(
         question,
         context,

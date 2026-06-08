@@ -30,6 +30,7 @@ class MedicalRetriever:
             embedding_model_name
         )
 
+
     def _get_query_embedding(
         self,
         query
@@ -41,6 +42,20 @@ class MedicalRetriever:
         )
 
         return query_embedding
+
+
+    def _get_search_k(
+        self, 
+        top_k=config["retrieval"]["top_k"]
+    ):
+        
+        search_k = max(
+            config["retrieval"]["search_min"],
+            top_k * config["retrieval"]["search_multiplier"]
+        )
+
+        return search_k
+
 
     def retrieve(
         self,
@@ -61,34 +76,6 @@ class MedicalRetriever:
 
         return results
 
-    def retrieve_with_metadata(
-        self,
-        query,
-        top_k=config['retrieval']['top_k']
-    ):
-
-        results = self.retrieve(
-            query,
-            top_k
-        )
-
-        formatted_results = []
-
-        for i in range(len(results["documents"][0])):
-
-            formatted_results.append(
-
-                {
-
-                    "text":
-                        results["documents"][0][i],
-
-                    "metadata":
-                        results["metadatas"][0][i]
-                }
-            )
-
-        return formatted_results
 
     def retrieve_recent(
         self,
@@ -116,11 +103,13 @@ class MedicalRetriever:
 
         return results
 
+
     def retrieve_diverse(
         self,
         query,
         top_k=config['retrieval']['top_k']
     ):
+        search_k = self._get_search_k(top_k)
 
         query_embedding = self._get_query_embedding(query)
 
@@ -130,7 +119,7 @@ class MedicalRetriever:
                 query_embedding.tolist()
             ],
 
-            n_results= max(10, top_k * 3)
+            n_results=search_k
         )
 
         seen_pmids = set()
@@ -168,3 +157,43 @@ class MedicalRetriever:
             "metadatas": [selected_metadatas],
             "distances": [selected_distances]
         }
+
+
+
+    def retrieve_diverse_articles(
+        self,
+        query,
+        top_k=config["retrieval"]["top_k"]
+    ):
+        search_k = self._get_search_k(top_k)
+
+        query_embedding = self._get_query_embedding(query)
+
+        results = self.collection.query(
+
+            query_embeddings=[
+                query_embedding.tolist()
+            ],
+
+            n_results=search_k
+        )
+
+        seen_pmids = set()
+
+        selected_metadatas = []
+
+        for metadata in results["metadatas"][0]:
+
+            pmid = metadata["pmid"]
+
+            if pmid in seen_pmids:
+                continue
+
+            seen_pmids.add(pmid)
+
+            selected_metadatas.append(metadata)
+
+            if len(selected_metadatas) >= top_k:
+                break
+
+        return selected_metadatas

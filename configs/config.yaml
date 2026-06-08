@@ -4,6 +4,10 @@ models:
 
 retrieval:
   top_k: 3
+  search_multiplier: 3
+  search_min: 10
+  min_unique_articles: 3
+  final_articles: 3
 
 chunking:
   chunk_size: 500
