@@ -10,7 +10,7 @@ def get_articles():
     if _ARTICLES is None:
 
         df = pd.read_json(
-            "data/processed/clean_documents.jsonl",
+            "../data/processed/clean_documents.jsonl",
             lines=True
         )
 

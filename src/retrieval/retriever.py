@@ -170,19 +170,23 @@ class MedicalRetriever:
         query_embedding = self._get_query_embedding(query)
 
         results = self.collection.query(
-
-            query_embeddings=[
-                query_embedding.tolist()
-            ],
-
+            query_embeddings=[query_embedding.tolist()],
             n_results=search_k
         )
 
         seen_pmids = set()
 
+        selected_ids = []
+        selected_documents = []
         selected_metadatas = []
+        selected_distances = []
 
-        for metadata in results["metadatas"][0]:
+        for doc_id, doc, metadata, distance in zip(
+            results["ids"][0],
+            results["documents"][0],
+            results["metadatas"][0],
+            results["distances"][0]
+        ):
 
             pmid = metadata["pmid"]
 
@@ -191,9 +195,17 @@ class MedicalRetriever:
 
             seen_pmids.add(pmid)
 
+            selected_ids.append(doc_id)
+            selected_documents.append(doc)
             selected_metadatas.append(metadata)
+            selected_distances.append(distance)
 
-            if len(selected_metadatas) >= top_k:
+            if len(selected_ids) >= top_k:
                 break
 
-        return selected_metadatas
+        return {
+            "ids": [selected_ids],
+            "documents": [selected_documents],
+            "metadatas": [selected_metadatas],
+            "distances": [selected_distances]
+        }

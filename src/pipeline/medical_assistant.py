@@ -65,7 +65,7 @@ def ask_medical_assistant(
     strict=True,
     debug=False
 ):
-	"""
+    """
     results = retriever.retrieve(
         query=question
     )
@@ -73,11 +73,11 @@ def ask_medical_assistant(
     context = build_context(results)
     """
     results = retriever.retrieve_diverse_articles(
-	    query=question
-	)
+        query=question
+    )
 
-	context = build_article_context(results)
-	    
+    context = build_article_context(results)
+        
     prompt = build_prompt(
         question,
         context,
