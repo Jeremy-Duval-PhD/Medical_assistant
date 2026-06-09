@@ -1,3 +1,5 @@
+import time
+
 from src.llm.generator import generate_answer
 from src.llm.prompts import build_prompt
 from src.data.article_store import get_articles
@@ -85,7 +87,7 @@ def ask_medical_assistant(
     )
 
     if debug:
-        print(f"Prompt:\n{prompt}")
+        print(f"Prompt:\n{prompt}\n(Prompt size: {len(prompt)})")
         print("\n")
         start = time.time()
     
