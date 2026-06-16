@@ -17,7 +17,9 @@ We will not use the entire article due to the significant amount of space it req
 
 ## Numbers Of Documents
 
-First, we chose to limit the number of documents to **between 500 and 2,000**. This is sufficient to create a powerful RAG while striking a good balance between quality and performance.
+First, we chose to limit the number of documents to **500**. This is sufficient to create a powerful RAG while striking a good balance between quality and performance.
+
+Second, we improved the query and the document corpus. We kept **3,307** unique documents.
 
 ## Data Structure
 
