@@ -11,7 +11,18 @@ We will use the following data:
 - titles
 - keywords
 - publication year
+- publication type
 - journal
+- mesh
+
+We added some features, such as the evidence level, which is defined as follows:
+| Publication Type  | Evidence Level |
+|:-----|:-----:|
+| guideline | 4 |
+| meta-analysis | 4 |
+| systematic review | 3 |
+| review | 2 |
+| other | 1 |
 
 We will not use the entire article due to the significant amount of space it requires and the strong strategy it demands. Moreover, there are access rights issues. The above elements are more than sufficient to create a powerful RAG.
 
