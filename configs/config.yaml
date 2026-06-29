@@ -4,10 +4,16 @@ models:
 
 retrieval:
   top_k: 3
-  search_multiplier: 3
-  search_min: 10
+  search_multiplier: 10
+  search_min: 20
   min_unique_articles: 3
   final_articles: 3
+
+  reranking:
+    enabled: true
+    evidence_weight: 0.05
+    recency_weight: 0.01
+    current_year: 2026
 
 chunking:
   chunk_size: 500

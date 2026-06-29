@@ -57,21 +57,88 @@ class MedicalRetriever:
         return search_k
 
 
+    def _retrieve_candidates(
+        self,
+        query,
+        search_k
+    ):
+        query_embedding = self._get_query_embedding(query)
+
+        return self.collection.query(
+            query_embeddings=[query_embedding.tolist()],
+            n_results=search_k
+        )
+
+
+    def _normalize_distances(
+        self,
+        distances
+    ):
+        """
+        Convert Chroma distances into similarity scores in [0, 1].
+
+        Parameters
+        ----------
+        distances : list[float]
+            Distances returned by ChromaDB.
+
+        Returns
+        -------
+        list[float]
+            Normalized semantic similarity scores.
+        """
+
+        min_distance = min(distances)
+        max_distance = max(distances)
+
+        if max_distance == min_distance:
+            return [1.0] * len(distances)
+
+        return [
+            (max_distance - d) / (max_distance - min_distance)
+            for d in distances
+        ]
+
+
+    def _compute_score(
+        self,
+        semantic_score,
+        metadata
+    ):
+        """
+        Compute the final retrieval score.
+
+        Parameters
+        ----------
+        semantic_score : float
+            Normalized semantic similarity.
+
+        metadata : dict
+            Metadata associated with the retrieved chunk.
+
+        Returns
+        -------
+        float
+            Final reranking score.
+        """
+
+        evidence_bonus = (
+            metadata["evidence_level"]
+            * config["retrieval"]["reranking"]["evidence_weight"]
+        )
+
+        return semantic_score + evidence_bonus
+
+
     def retrieve(
         self,
         query,
         top_k=config['retrieval']['top_k']
     ):
 
-        query_embedding = self._get_query_embedding(query)
-
-        results = self.collection.query(
-
-            query_embeddings=[
-                query_embedding.tolist()
-            ],
-
-            n_results=top_k
+        results = self._retrieve_candidates(
+            query=query,
+            search_k=top_k
         )
 
         return results
@@ -111,15 +178,9 @@ class MedicalRetriever:
     ):
         search_k = self._get_search_k(top_k)
 
-        query_embedding = self._get_query_embedding(query)
-
-        results = self.collection.query(
-
-            query_embeddings=[
-                query_embedding.tolist()
-            ],
-
-            n_results=search_k
+        results = self._retrieve_candidates(
+            query=query,
+            search_k=top_k
         )
 
         seen_pmids = set()
@@ -167,11 +228,9 @@ class MedicalRetriever:
     ):
         search_k = self._get_search_k(top_k)
 
-        query_embedding = self._get_query_embedding(query)
-
-        results = self.collection.query(
-            query_embeddings=[query_embedding.tolist()],
-            n_results=search_k
+        results = self._retrieve_candidates(
+            query=query,
+            search_k=top_k
         )
 
         seen_pmids = set()
@@ -208,4 +267,70 @@ class MedicalRetriever:
             "documents": [selected_documents],
             "metadatas": [selected_metadatas],
             "distances": [selected_distances]
+        }
+
+
+    def retrieve_reranked(
+        self,
+        query,
+        top_k=config["retrieval"]["top_k"]
+    ):
+        """
+        Retrieve documents using semantic search followed by metadata reranking.
+        """
+
+        search_k = self._get_search_k(top_k)
+
+        results = self._retrieve_candidates(
+            query=query,
+            search_k=search_k
+        )
+
+        semantic_scores = self._normalize_distances(
+            results["distances"][0]
+        )
+
+        candidates = []
+
+        for (
+            doc_id,
+            document,
+            metadata,
+            distance,
+            semantic_score,
+        ) in zip(
+            results["ids"][0],
+            results["documents"][0],
+            results["metadatas"][0],
+            results["distances"][0],
+            semantic_scores,
+        ):
+
+            score = self._compute_score(
+                semantic_score=semantic_score,
+                metadata=metadata,
+            )
+
+            candidates.append(
+                {
+                    "score": score,
+                    "id": doc_id,
+                    "document": document,
+                    "metadata": metadata,
+                    "distance": distance,
+                }
+            )
+
+        candidates.sort(
+            key=lambda x: x["score"],
+            reverse=True,
+        )
+
+        selected = candidates[:top_k]
+
+        return {
+            "ids": [[c["id"] for c in selected]],
+            "documents": [[c["document"] for c in selected]],
+            "metadatas": [[c["metadata"] for c in selected]],
+            "distances": [[c["distance"] for c in selected]],
         }
