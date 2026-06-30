@@ -130,6 +130,122 @@ class MedicalRetriever:
         return semantic_score + evidence_bonus
 
 
+    def _unique_articles(
+        self,
+        results
+    ):
+        """
+        Keep only the best chunk (smallest distance)
+        for each PMID.
+        """
+
+        articles = {}
+
+        for doc_id, doc, metadata, distance in zip(
+            results["ids"][0],
+            results["documents"][0],
+            results["metadatas"][0],
+            results["distances"][0]
+        ):
+
+            pmid = metadata["pmid"]
+
+            if (
+                pmid not in articles
+                or distance < articles[pmid]["distance"]
+            ):
+
+                articles[pmid] = {
+                    "id": doc_id,
+                    "document": doc,
+                    "metadata": metadata,
+                    "distance": distance,
+                }
+
+        selected = sorted(
+            articles.values(),
+            key=lambda x: x["distance"]
+        )
+
+        return {
+            "ids": [[x["id"] for x in selected]],
+            "documents": [[x["document"] for x in selected]],
+            "metadatas": [[x["metadata"] for x in selected]],
+            "distances": [[x["distance"] for x in selected]],
+        }
+
+
+    def _rerank_candidates(
+        self,
+        results,
+    ):
+        """
+        Compute the final score of each retrieved article
+        and sort candidates by decreasing score.
+        """
+
+        semantic_scores = self._normalize_distances(
+            results["distances"][0]
+        )
+
+        candidates = []
+
+        for (
+            doc_id,
+            document,
+            metadata,
+            distance,
+            semantic_score,
+        ) in zip(
+            results["ids"][0],
+            results["documents"][0],
+            results["metadatas"][0],
+            results["distances"][0],
+            semantic_scores,
+        ):
+
+            final_score = self._compute_score(
+                semantic_score=semantic_score,
+                metadata=metadata,
+            )
+
+            candidates.append(
+                {
+                    "score": final_score,
+                    "id": doc_id,
+                    "document": document,
+                    "metadata": metadata,
+                    "distance": distance,
+                }
+            )
+
+        candidates.sort(
+            key=lambda x: x["score"],
+            reverse=True,
+        )
+
+        return candidates
+
+
+    def _select_top_k(
+        self,
+        candidates,
+        top_k,
+    ):
+        """
+        Convert ranked candidates into the Chroma format.
+        """
+
+        selected = candidates[:top_k]
+
+        return {
+            "ids": [[x["id"] for x in selected]],
+            "documents": [[x["document"] for x in selected]],
+            "metadatas": [[x["metadata"] for x in selected]],
+            "distances": [[x["distance"] for x in selected]],
+        }
+
+
     def retrieve(
         self,
         query,
@@ -220,7 +336,6 @@ class MedicalRetriever:
         }
 
 
-
     def retrieve_diverse_articles(
         self,
         query,
@@ -276,61 +391,28 @@ class MedicalRetriever:
         top_k=config["retrieval"]["top_k"]
     ):
         """
-        Retrieve documents using semantic search followed by metadata reranking.
+        Retrieve articles using semantic search followed
+        by metadata-based reranking.
         """
 
         search_k = self._get_search_k(top_k)
 
+        # search
         results = self._retrieve_candidates(
             query=query,
-            search_k=search_k
+            search_k=search_k,
         )
 
-        semantic_scores = self._normalize_distances(
-            results["distances"][0]
+        # remove duplicates
+        results = self._unique_articles(results)
+
+        # Score
+        candidates = self._rerank_candidates(
+            results
         )
 
-        candidates = []
-
-        for (
-            doc_id,
-            document,
-            metadata,
-            distance,
-            semantic_score,
-        ) in zip(
-            results["ids"][0],
-            results["documents"][0],
-            results["metadatas"][0],
-            results["distances"][0],
-            semantic_scores,
-        ):
-
-            score = self._compute_score(
-                semantic_score=semantic_score,
-                metadata=metadata,
-            )
-
-            candidates.append(
-                {
-                    "score": score,
-                    "id": doc_id,
-                    "document": document,
-                    "metadata": metadata,
-                    "distance": distance,
-                }
-            )
-
-        candidates.sort(
-            key=lambda x: x["score"],
-            reverse=True,
+        # output format
+        return self._select_top_k(
+            candidates,
+            top_k,
         )
-
-        selected = candidates[:top_k]
-
-        return {
-            "ids": [[c["id"] for c in selected]],
-            "documents": [[c["document"] for c in selected]],
-            "metadatas": [[c["metadata"] for c in selected]],
-            "distances": [[c["distance"] for c in selected]],
-        }

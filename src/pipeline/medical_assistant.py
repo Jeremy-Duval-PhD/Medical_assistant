@@ -74,7 +74,7 @@ def ask_medical_assistant(
     
     context = build_context(results)
     """
-    results = retriever.retrieve_diverse_articles(
+    results = retriever.retrieve_reranked(
         query=question
     )
 
