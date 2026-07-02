@@ -1,6 +1,8 @@
 import chromadb
 from sentence_transformers import SentenceTransformer
 
+from datetime import datetime
+
 from src.preprocessing.query_processing import clean_query
 
 from src.utils.config import load_config
@@ -33,9 +35,11 @@ class MedicalRetriever:
 
     def _get_query_embedding(
         self,
-        query
-    ):    
-        processed_query = clean_query(query)
+        processed_query,
+    ):
+        """
+        Compute the embedding of an already processed query.
+        """
 
         query_embedding = self.embedding_model.encode(
             processed_query
@@ -57,16 +61,24 @@ class MedicalRetriever:
         return search_k
 
 
-    def _retrieve_candidates(
+    def _semantic_search(
         self,
-        query,
-        search_k
+        processed_query,
+        search_k,
     ):
-        query_embedding = self._get_query_embedding(query)
+        """
+        Retrieve the top semantic candidates from ChromaDB.
+        """
+
+        query_embedding = self._get_query_embedding(
+            processed_query
+        )
 
         return self.collection.query(
-            query_embeddings=[query_embedding.tolist()],
-            n_results=search_k
+            query_embeddings=[
+                query_embedding.tolist()
+            ],
+            n_results=search_k,
         )
 
 
@@ -100,34 +112,191 @@ class MedicalRetriever:
         ]
 
 
-    def _compute_score(
+    def _semantic_score(
         self,
         semantic_score,
-        metadata
     ):
         """
-        Compute the final retrieval score.
+        Return normalized semantic similarity.
+        """
 
-        Parameters
-        ----------
-        semantic_score : float
-            Normalized semantic similarity.
+        return semantic_score
 
-        metadata : dict
-            Metadata associated with the retrieved chunk.
 
-        Returns
-        -------
-        float
-            Final reranking score.
+    def _keyword_score(
+        self,
+        query_keywords,
+        metadata,
+    ):
+        """
+        Compute keyword overlap score.
+        """
+
+        article_keywords = set(
+            metadata.get(
+                "keywords",
+                []
+            )
+        )
+
+        if not article_keywords:
+            return None
+
+        overlap = len(
+            query_keywords &
+            article_keywords
+        )
+
+        return overlap / len(query_keywords)
+
+
+    def _mesh_score(
+        self,
+        query_keywords,
+        metadata,
+    ):
+        """
+        Compute MeSH overlap score.
+        """
+
+        mesh_terms = set(
+            metadata.get(
+                "mesh_terms",
+                []
+            )
+        )
+
+        if not mesh_terms:
+            return None
+
+        overlap = len(
+            query_keywords &
+            mesh_terms
+        )
+
+        return overlap / len(query_keywords)
+
+
+    def _retrieval_score(
+        self,
+        semantic_score,
+        query_keywords,
+        metadata,
+    ):
+        """
+        Compute retrieval score from semantic similarity,
+        keywords and MeSH terms.
+        """
+
+        scores = []
+
+        scores.append(
+            (
+                self._semantic_score(
+                    semantic_score
+                ),
+                config["retrieval"]["semantic_weight"],
+            )
+        )
+
+        keyword_score = self._keyword_score(
+            query_keywords,
+            metadata,
+        )
+
+        if keyword_score is not None:
+
+            scores.append(
+                (
+                    keyword_score,
+                    config["retrieval"]["keyword_weight"],
+                )
+            )
+
+        mesh_score = self._mesh_score(
+            query_keywords,
+            metadata,
+        )
+
+        if mesh_score is not None:
+
+            scores.append(
+                (
+                    mesh_score,
+                    config["retrieval"]["mesh_weight"],
+                )
+            )
+
+        total_weight = sum(
+            weight
+            for _, weight in scores
+        )
+
+        # Re normalize score if keywords or mesh are empty
+        return sum(
+            score * weight
+            for score, weight in scores
+        ) / total_weight
+
+
+    def _bonus_score(
+        self,
+        metadata,
+    ):
+        """
+        Compute metadata bonus.
         """
 
         evidence_bonus = (
-            metadata["evidence_level"]
+            metadata.get(
+                "evidence_level",
+                0,
+            )
             * config["retrieval"]["reranking"]["evidence_weight"]
         )
 
-        return semantic_score + evidence_bonus
+        current_year = datetime.now().year
+
+        age = max(
+            0,
+            current_year
+            - metadata.get(
+                "year",
+                current_year,
+            )
+        )
+
+        recency_bonus = (
+            1 / (1 + age)
+        ) * config["retrieval"]["reranking"]["recency_weight"]
+
+        return (
+            evidence_bonus
+            + recency_bonus
+        )
+
+
+    def _compute_score(
+        self,
+        semantic_score,
+        query_keywords,
+        metadata,
+    ):
+        """
+        Compute final article score.
+        """
+
+        retrieval_score = self._retrieval_score(
+            semantic_score=semantic_score,
+            query_keywords=query_keywords,
+            metadata=metadata,
+        )
+
+        bonus = self._bonus_score(
+            metadata
+        )
+
+        return retrieval_score + bonus
 
 
     def _unique_articles(
@@ -177,6 +346,7 @@ class MedicalRetriever:
 
     def _rerank_candidates(
         self,
+        query_keywords,
         results,
     ):
         """
@@ -206,6 +376,7 @@ class MedicalRetriever:
 
             final_score = self._compute_score(
                 semantic_score=semantic_score,
+                query_keywords=query_keywords,
                 metadata=metadata,
             )
 
@@ -246,18 +417,22 @@ class MedicalRetriever:
         }
 
 
+
+
+
+
     def retrieve(
         self,
         query,
-        top_k=config['retrieval']['top_k']
+        top_k=config["retrieval"]["top_k"]
     ):
 
-        results = self._retrieve_candidates(
-            query=query,
-            search_k=top_k
-        )
+        processed_query = clean_query(query)
 
-        return results
+        return self._semantic_search(
+            processed_query=processed_query,
+            search_k=top_k,
+        )
 
 
     def retrieve_recent(
@@ -294,9 +469,10 @@ class MedicalRetriever:
     ):
         search_k = self._get_search_k(top_k)
 
-        results = self._retrieve_candidates(
-            query=query,
-            search_k=top_k
+        processed_query = clean_query(query)
+        results = self._semantic_search(
+            processed_query=processed_query,
+            search_k=search_k,
         )
 
         seen_pmids = set()
@@ -342,12 +518,13 @@ class MedicalRetriever:
         top_k=config["retrieval"]["top_k"]
     ):
         search_k = self._get_search_k(top_k)
+        processed_query = clean_query(query)
 
-        results = self._retrieve_candidates(
-            query=query,
-            search_k=top_k
+        results = self._semantic_search(
+            processed_query=processed_query,
+            search_k=search_k,
         )
-
+        
         seen_pmids = set()
 
         selected_ids = []
@@ -397,21 +574,28 @@ class MedicalRetriever:
 
         search_k = self._get_search_k(top_k)
 
-        # search
-        results = self._retrieve_candidates(
-            query=query,
+        # Preprocess query once
+        processed_query = clean_query(query)
+
+        query_keywords = set(
+            processed_query.split()
+        )
+
+        # Semantic retrieval
+        results = self._semantic_search(
+            processed_query=processed_query,
             search_k=search_k,
         )
 
-        # remove duplicates
+        # Keep one chunk per article
         results = self._unique_articles(results)
 
-        # Score
+        # Metadata reranking
         candidates = self._rerank_candidates(
-            results
+            query_keywords=query_keywords,
+            results=results,
         )
 
-        # output format
         return self._select_top_k(
             candidates,
             top_k,

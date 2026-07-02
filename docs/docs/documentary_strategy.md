@@ -165,3 +165,9 @@ The main objectives of the sprint have been achieved:
 - generated embeddings
 - operational ChromaDB vectorization
 - functional semantic search
+
+# Retriver upgrade
+
+About 100 chunks are extracted. Only one chunk per article is selected. A hybrid retriever is then used to rank the chunks by relevance: 
+- The retrieval score: composed primarily of the semantic score (derived from the embedding), the proportion of keywords, and the proportion of mesh. If no keywords and/or no mesh exist, the weights (see the configuration file) are renormalized to avoid selection bias.
+- The bonus score: heavily weighted toward the type of article (level of evidence) and slightly weighted toward the year of publication.
